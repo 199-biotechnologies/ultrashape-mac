@@ -48,15 +48,23 @@ This is a **Mac/Apple Silicon (MPS) compatible port** of [UltraShape 1.0](https:
 git clone https://github.com/199-biotechnologies/ultrashape-mac.git
 cd ultrashape-mac
 
-# Create conda environment
-conda create -n ultrashape python=3.10
-conda activate ultrashape
+# Create a virtual environment (Python 3.10-3.12 recommended)
+python3 -m venv venv
+source venv/bin/activate
 
 # Install PyTorch with MPS support
 pip install torch torchvision torchaudio
 
-# Install dependencies
+# Install dependencies (torch must be installed first)
 pip install -r requirements.txt
+
+# Note: 'diso' package will fail to install (CUDA-only) - this is expected
+# The pipeline uses scikit-image marching cubes as fallback
+```
+
+**Important:** Set this environment variable when running on MPS:
+```bash
+export PYTORCH_ENABLE_MPS_FALLBACK=1
 ```
 
 ### Linux/Windows (NVIDIA GPU)
@@ -84,7 +92,12 @@ pip install https://data.pyg.org/whl/torch-2.5.0%2Bcu121/torch_cluster-1.6.3%2Bp
 
 ### Download Model Weights
 
-Download the pre-trained weights from Hugging Face [[infinith/UltraShape](https://huggingface.co/infinith/UltraShape/tree/main)] and place them in your checkpoint directory (e.g., `./checkpoints/`).
+```bash
+# Using huggingface-cli (recommended)
+huggingface-cli download infinith/UltraShape --local-dir ~/.cache/hy3dgen/infinith/UltraShape
+
+# Or manually download from: https://huggingface.co/infinith/UltraShape
+```
 
 ## Usage
 
@@ -96,10 +109,23 @@ First, use [Hunyuan3D-2.1](https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1) to 
 
 **Command Line:**
 ```bash
-python scripts/infer_dit_refine.py \
+# For Mac/MPS:
+PYTORCH_ENABLE_MPS_FALLBACK=1 PYTHONPATH=$PWD python scripts/infer_dit_refine.py \
     --image path/to/image.png \
     --mesh path/to/coarse_mesh.glb \
-    --ckpt path/to/checkpoint.pt \
+    --ckpt ~/.cache/hy3dgen/infinith/UltraShape/ultrashape_v1.pt \
+    --output_dir outputs \
+    --num_latents 4096 \
+    --chunk_size 1024 \
+    --octree_res 128 \
+    --steps 12 \
+    --low_vram
+
+# For NVIDIA GPUs (full quality):
+PYTHONPATH=$PWD python scripts/infer_dit_refine.py \
+    --image path/to/image.png \
+    --mesh path/to/coarse_mesh.glb \
+    --ckpt ~/.cache/hy3dgen/infinith/UltraShape/ultrashape_v1.pt \
     --output_dir outputs
 ```
 
@@ -120,9 +146,16 @@ python scripts/gradio_app.py --ckpt path/to/checkpoint.pt
 
 ### Mac-Specific Tips
 
-1. **Memory**: Apple Silicon Macs share RAM between CPU and GPU. Close other apps to maximize available memory.
-2. **First Run**: The first inference may be slower due to MPS kernel compilation.
-3. **Reduce Settings**: If you encounter OOM errors, reduce `--num_latents` to 8192 and `--chunk_size` to 2048.
+1. **Environment Variable**: Always set `PYTORCH_ENABLE_MPS_FALLBACK=1` - some PyTorch ops aren't implemented for MPS yet.
+2. **Memory**: Apple Silicon Macs share RAM between CPU and GPU. Close other apps to maximize available memory.
+3. **Tested Settings** (M-series Mac with 88GB unified memory):
+   - `--num_latents 4096` (reduced from 32768)
+   - `--chunk_size 1024` (reduced from 8000)
+   - `--octree_res 128` (reduced from 1024)
+   - `--steps 12` (reduced from 50)
+   - `--low_vram` (enables CPU offloading)
+4. **First Run**: The first inference may be slower due to MPS kernel compilation.
+5. **PYTHONPATH**: Add the project root to PYTHONPATH: `PYTHONPATH=$PWD python ...`
 
 ## Performance Notes
 

@@ -1,35 +1,25 @@
 # Core dependencies (cross-platform)
-accelerate==1.1.1
-diffusers==0.30.0
-diso==0.1.4
-einops==0.8.1
-huggingface_hub==0.36.0
-imageio==2.36.0
-ipywidgets==8.1.7
-jaxtyping==0.3.4
-matplotlib==3.10.0
-numpy==1.24.4
-omegaconf==2.3.0
-opencv_python==4.10.0.84
-opencv_python_headless==4.11.0.86
-pandas==2.2.3
-Pillow==11.0.0
-pymeshlab==2022.2.post3
-pythreejs==2.4.2
-pytorch_lightning==1.9.5
-PyYAML==6.0.2
-safetensors==0.4.5
-scikit-image==0.24.0
+# Note: Install torch first before running pip install -r requirements.txt
+accelerate>=1.1.1
+diffusers>=0.30.0
+einops>=0.8.1
+huggingface_hub>=0.36.0
+imageio>=2.36.0
+omegaconf>=2.3.0
+opencv-python-headless>=4.10.0
+Pillow>=11.0.0
+pymeshlab
+pytorch_lightning>=1.9.5
+PyYAML>=6.0.2
+safetensors>=0.4.5
+scikit-image>=0.24.0
 onnxruntime
 rembg
-tensorboard
-timm==1.0.11
-torchdiffeq==0.2.5
-tqdm==4.66.5
-transformers==4.37.2
-trimesh==4.4.7
-typeguard==4.3.0
-wandb==0.18.7
+timm>=1.0.11
+torchdiffeq>=0.2.5
+tqdm>=4.66.5
+transformers>=4.37.2
+trimesh>=4.4.7
 gradio>=4.0.0
 
 # =============================================================================
@@ -39,6 +29,7 @@ gradio>=4.0.0
 # required for running on Mac (MPS) or CPU.
 #
 # For NVIDIA GPU users:
+#   pip install diso==0.1.4  # differentiable marching cubes
 #   pip install flash_attn==2.8.3
 #   pip install sageattention==1.0.6
 #   pip install deepspeed
