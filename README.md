@@ -1,54 +1,49 @@
 <div align="center">
 
-<h1>UltraShape 1.0 - Mac/MPS Port</h1>
+# UltraShape for Mac
 
-<p><strong>High-Fidelity 3D Shape Generation via Scalable Geometric Refinement</strong></p>
+**Run UltraShape 1.0 3D shape generation natively on Apple Silicon.**
 
-<a href="https://arxiv.org/pdf/2512.21185"><img src="https://img.shields.io/badge/arXiv-2512.21185-b31b1b.svg?style=flat-square" alt="arXiv"></a>
-<a href="https://pku-yuangroup.github.io/UltraShape-1.0/"><img src="https://img.shields.io/badge/Project-Page-blue?style=flat-square" alt="Project Page"></a>
-<a href="https://huggingface.co/infinith/UltraShape"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-yellow?style=flat-square" alt="HuggingFace Models"></a>
+[![Star this repo](https://img.shields.io/github/stars/199-biotechnologies/ultrashape-mac?style=for-the-badge&logo=github&label=%E2%AD%90%20Star%20this%20repo&color=yellow)](https://github.com/199-biotechnologies/ultrashape-mac/stargazers)
+[![Follow @longevityboris](https://img.shields.io/badge/Follow_%40longevityboris-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/longevityboris)
+
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![PyTorch](https://img.shields.io/badge/PyTorch-MPS-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
+[![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-M1--M4-000000?style=for-the-badge&logo=apple&logoColor=white)](https://support.apple.com/en-us/116943)
+[![License](https://img.shields.io/badge/License-Tencent_Hunyuan-blue?style=for-the-badge)](LICENSE)
+[![arXiv](https://img.shields.io/badge/arXiv-2512.21185-b31b1b?style=for-the-badge)](https://arxiv.org/pdf/2512.21185)
+
+UltraShape 1.0 generates high-fidelity 3D meshes from images via geometric refinement. The original requires NVIDIA CUDA. This port runs on your Mac.
+
+[Why This Exists](#why-this-exists) | [Install](#install) | [Quick Start](#quick-start) | [How It Works](#how-it-works) | [Features](#features) | [Performance](#performance) | [Contributing](#contributing) | [License](#license)
 
 </div>
 
-<br/>
+---
 
-## About This Fork
+## Why This Exists
 
-This is a **Mac/Apple Silicon (MPS) compatible port** of [UltraShape 1.0](https://github.com/PKU-YuanGroup/UltraShape-1.0) by PKU-Yuan-Lab. The original model requires NVIDIA CUDA GPUs, but this fork enables running on:
+[UltraShape 1.0](https://github.com/PKU-YuanGroup/UltraShape-1.0) by PKU-Yuan-Lab is a state-of-the-art 3D shape generation model. It takes a coarse mesh and refines it into a high-fidelity 3D shape with sharp geometric detail. The problem: it only runs on NVIDIA CUDA GPUs.
 
-- **Apple Silicon Macs** (M1/M2/M3/M4) via MPS (Metal Performance Shaders)
-- **CPU** (slower but universal)
-- **NVIDIA GPUs** (original CUDA support preserved)
+This port replaces every CUDA-only dependency with cross-platform alternatives so the entire pipeline runs on Apple Silicon via Metal Performance Shaders (MPS). No NVIDIA hardware required. CUDA support is preserved for users who have it.
 
-### What Changed
-
-| Component | Original | This Fork |
-|-----------|----------|-----------|
-| Marching Cubes | `cubvh` (CUDA-only) | `scikit-image` fallback for MPS/CPU |
-| Attention | `flash_attn` (CUDA-only) | PyTorch native `scaled_dot_product_attention` |
-| SageAttention | Required for some modes | Optional, graceful fallback |
+| Component | Original (CUDA-only) | This Port |
+|---|---|---|
+| Marching Cubes | `cubvh` | `scikit-image` fallback |
+| Attention | `flash_attn` | PyTorch `scaled_dot_product_attention` |
+| SageAttention | Required | Optional, graceful fallback |
 | torch_cluster | CUDA wheels only | Pure PyTorch FPS fallback |
-| Device | CUDA hardcoded | Auto-detect CUDA/MPS/CPU |
+| Device detection | CUDA hardcoded | Auto-detect CUDA / MPS / CPU |
 | Autocast dtype | `bfloat16` | `float16` for MPS compatibility |
 
-<br/>
+## Install
 
-<div align="center">
-  <img src="docs/assets/images/teaser.png" width="100%" alt="UltraShape 1.0 Teaser" />
-</div>
-
-<br/>
-
-## Installation
-
-### Mac (Apple Silicon)
+### Apple Silicon Mac (M1/M2/M3/M4)
 
 ```bash
-# Clone this repository
 git clone https://github.com/199-biotechnologies/ultrashape-mac.git
 cd ultrashape-mac
 
-# Create a virtual environment (Python 3.10-3.12 recommended)
 python3 -m venv venv
 source venv/bin/activate
 
@@ -57,34 +52,22 @@ pip install torch torchvision torchaudio
 
 # Install dependencies (torch must be installed first)
 pip install -r requirements.txt
-
-# Note: 'diso' package will fail to install (CUDA-only) - this is expected
-# The pipeline uses scikit-image marching cubes as fallback
+# Note: 'diso' will fail to install (CUDA-only) - this is expected
 ```
 
-**Important:** Set this environment variable when running on MPS:
-```bash
-export PYTORCH_ENABLE_MPS_FALLBACK=1
-```
-
-### Linux/Windows (NVIDIA GPU)
+### NVIDIA GPU (Linux/Windows)
 
 ```bash
-# Clone this repository
 git clone https://github.com/199-biotechnologies/ultrashape-mac.git
 cd ultrashape-mac
 
-# Create conda environment
 conda create -n ultrashape python=3.10
 conda activate ultrashape
 
-# Install PyTorch with CUDA
 pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu121
-
-# Install dependencies
 pip install -r requirements.txt
 
-# Optional: Install CUDA-accelerated packages for better performance
+# Optional CUDA accelerators
 pip install flash_attn==2.8.3
 pip install git+https://github.com/ashawkey/cubvh --no-build-isolation
 pip install https://data.pyg.org/whl/torch-2.5.0%2Bcu121/torch_cluster-1.6.3%2Bpt25cu121-cp310-cp310-linux_x86_64.whl
@@ -93,23 +76,16 @@ pip install https://data.pyg.org/whl/torch-2.5.0%2Bcu121/torch_cluster-1.6.3%2Bp
 ### Download Model Weights
 
 ```bash
-# Using huggingface-cli (recommended)
 huggingface-cli download infinith/UltraShape --local-dir ~/.cache/hy3dgen/infinith/UltraShape
-
-# Or manually download from: https://huggingface.co/infinith/UltraShape
 ```
 
-## Usage
+## Quick Start
 
-### 1. Generate Coarse Mesh
+UltraShape refines a coarse mesh into a detailed 3D shape. You need an input image and a coarse mesh (generate one with [Hunyuan3D-2.1](https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1)).
 
-First, use [Hunyuan3D-2.1](https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1) to generate a coarse mesh from your input image.
+**On Mac (MPS):**
 
-### 2. Refine with UltraShape
-
-**Command Line:**
 ```bash
-# For Mac/MPS:
 PYTORCH_ENABLE_MPS_FALLBACK=1 PYTHONPATH=$PWD python scripts/infer_dit_refine.py \
     --image path/to/image.png \
     --mesh path/to/coarse_mesh.glb \
@@ -120,8 +96,11 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 PYTHONPATH=$PWD python scripts/infer_dit_refine.py
     --octree_res 128 \
     --steps 12 \
     --low_vram
+```
 
-# For NVIDIA GPUs (full quality):
+**On NVIDIA GPU:**
+
+```bash
 PYTHONPATH=$PWD python scripts/infer_dit_refine.py \
     --image path/to/image.png \
     --mesh path/to/coarse_mesh.glb \
@@ -130,43 +109,69 @@ PYTHONPATH=$PWD python scripts/infer_dit_refine.py \
 ```
 
 **Gradio Web UI:**
+
 ```bash
 python scripts/gradio_app.py --ckpt path/to/checkpoint.pt
 ```
 
+## How It Works
+
+UltraShape 1.0 uses a DiT (Diffusion Transformer) architecture to refine coarse 3D meshes. The pipeline:
+
+1. **Input** -- an image and a coarse mesh (from Hunyuan3D-2.1 or similar)
+2. **Encode** -- the VAE encodes the mesh into a latent representation
+3. **Condition** -- the image conditioner extracts visual features
+4. **Refine** -- the DiT denoises the latent, guided by image features
+5. **Decode** -- the VAE decodes refined latents back into a high-fidelity mesh
+
+The Mac port replaces CUDA kernels with platform-agnostic PyTorch ops. MPS acceleration handles the heavy lifting on Apple Silicon. CPU offloading (`--low_vram`) keeps memory usage manageable on machines with less unified memory.
+
+## Features
+
+- **Native Apple Silicon support** via MPS (Metal Performance Shaders)
+- **Auto device detection** -- CUDA, MPS, or CPU, picked automatically
+- **Low VRAM mode** -- CPU offloading for memory-constrained machines
+- **Gradio web UI** for interactive mesh refinement
+- **Full CUDA support preserved** for NVIDIA users
+- **Configurable inference** -- tune steps, latent count, chunk size, and resolution
+
 ### Parameters
 
 | Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--steps` | 50 | Inference steps (reduce to 12 for faster generation) |
-| `--num_latents` | 32768 | Number of latent tokens (reduce to 8192 if OOM) |
-| `--chunk_size` | 8000 | Chunk size (reduce to 2048 if OOM) |
+|---|---|---|
+| `--steps` | 50 | Inference steps (12 for faster generation) |
+| `--num_latents` | 32768 | Latent tokens (reduce to 4096-8192 if OOM) |
+| `--chunk_size` | 8000 | Processing chunk size (reduce to 1024-2048 if OOM) |
 | `--octree_res` | 1024 | Marching cubes resolution |
-| `--low_vram` | False | Enable CPU offloading for low VRAM |
+| `--low_vram` | False | Enable CPU offloading |
 
-### Mac-Specific Tips
+### Mac Tips
 
-1. **Environment Variable**: Always set `PYTORCH_ENABLE_MPS_FALLBACK=1` - some PyTorch ops aren't implemented for MPS yet.
-2. **Memory**: Apple Silicon Macs share RAM between CPU and GPU. Close other apps to maximize available memory.
-3. **Tested Settings** (M-series Mac with 88GB unified memory):
-   - `--num_latents 4096` (reduced from 32768)
-   - `--chunk_size 1024` (reduced from 8000)
-   - `--octree_res 128` (reduced from 1024)
-   - `--steps 12` (reduced from 50)
-   - `--low_vram` (enables CPU offloading)
-4. **First Run**: The first inference may be slower due to MPS kernel compilation.
-5. **PYTHONPATH**: Add the project root to PYTHONPATH: `PYTHONPATH=$PWD python ...`
+- Always set `PYTORCH_ENABLE_MPS_FALLBACK=1` -- some PyTorch ops lack MPS implementations
+- Apple Silicon shares RAM between CPU and GPU. Close other apps to free memory.
+- First inference is slower due to MPS kernel compilation
+- Add the project root to PYTHONPATH: `PYTHONPATH=$PWD python ...`
 
-## Performance Notes
+## Performance
 
-| Platform | Expected Performance |
-|----------|---------------------|
-| NVIDIA RTX 4090 | ~2-3 min per mesh (with flash_attn) |
-| Apple M3 Max (64GB) | ~10-15 min per mesh |
-| Apple M1 (16GB) | ~30+ min (may need reduced settings) |
+| Platform | Time per Mesh |
+|---|---|
+| NVIDIA RTX 4090 | ~2-3 min (with flash_attn) |
+| Apple M3 Max (64GB) | ~10-15 min |
+| Apple M1 (16GB) | ~30+ min (reduced settings) |
 | CPU only | 1+ hour |
 
-## Original Paper
+Tested Mac settings (88GB unified memory): `--num_latents 4096 --chunk_size 1024 --octree_res 128 --steps 12 --low_vram`
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+This project uses the [Tencent Hunyuan Community License](LICENSE). See the license file for full terms.
+
+## Citation
 
 ```bibtex
 @article{jia2025ultrashape,
@@ -179,10 +184,17 @@ python scripts/gradio_app.py --ckpt path/to/checkpoint.pt
 
 ## Acknowledgements
 
-- Original [UltraShape 1.0](https://github.com/PKU-YuanGroup/UltraShape-1.0) by PKU-Yuan-Lab
+- [UltraShape 1.0](https://github.com/PKU-YuanGroup/UltraShape-1.0) by PKU-Yuan-Lab
 - [Hunyuan3D-2.1](https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1) by Tencent
 - [LATTICE](https://arxiv.org/abs/2512.03052) for inspiring the core methodology
 
-## License
+---
 
-This project follows the same license as the original UltraShape 1.0 (TENCENT HUNYUAN NON-COMMERCIAL LICENSE AGREEMENT). See [LICENSE](LICENSE) for details.
+<div align="center">
+
+Built by [Boris Djordjevic](https://github.com/longevityboris) at [199 Biotechnologies](https://github.com/199-biotechnologies) | [Paperfoot AI](https://paperfoot.ai)
+
+[![Star this repo](https://img.shields.io/github/stars/199-biotechnologies/ultrashape-mac?style=for-the-badge&logo=github&label=%E2%AD%90%20Star%20this%20repo&color=yellow)](https://github.com/199-biotechnologies/ultrashape-mac/stargazers)
+[![Follow @longevityboris](https://img.shields.io/badge/Follow_%40longevityboris-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/longevityboris)
+
+</div>
